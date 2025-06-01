@@ -1,0 +1,10 @@
+name: harmonic-ai-surrogate
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pandas
+  - scipy
+  - matplotlib
+  - scikit-learn
+  - notebook
