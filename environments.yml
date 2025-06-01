@@ -1,4 +1,4 @@
-name: harmonic-ai-surrogate
+name: Harmonic-AI-Surrogate
 channels:
   - defaults
 dependencies:
