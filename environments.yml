@@ -2,9 +2,8 @@ name: Harmonic-AI-Surrogate
 channels:
   - defaults
 dependencies:
-  - python=3.10
+  - python
   - pandas
   - scipy
   - matplotlib
   - scikit-learn
-  - notebook
