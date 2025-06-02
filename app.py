@@ -7,10 +7,31 @@ import matplotlib.pyplot as plt
 # Set Streamlit page config
 st.set_page_config(page_title="Damped Oscillator Predictor", layout="centered")
 
-# Load model and scaler
-model = joblib.load('harmonic_surrogate_model.pkl')
-scaler = joblib.load('scaler.pkl')  # If you used StandardScaler
+# ---- Model Loading with Error Handling ----
+@st.cache_resource  # Cache the model for better performance
+def load_model():
+    try:
+        model_path = os.path.join('model', 'harmonic_surrogate_model.pkl')
+        scaler_path = os.path.join('model', 'scaler.pkl')
+        
+        # Check if files exist
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found at {model_path}")
+        if not os.path.exists(scaler_path):
+            raise FileNotFoundError(f"Scaler file not found at {scaler_path}")
+        
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        return model, scaler
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        return None, None
 
+model, scaler = load_model()
+
+# Only proceed if model loaded successfully
+if model is None:
+    st.stop()  # Stop the app if model fails to load
 # App title
 st.title("🔮 Damped Harmonic Oscillator Final Position Predictor")
 
