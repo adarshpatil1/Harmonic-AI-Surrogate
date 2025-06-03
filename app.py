@@ -7,13 +7,21 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Damped Oscillator", layout="centered")
 
+# Model loader
 @st.cache_resource
-def load_model_and_scaler():
-    model = joblib.load('model/harmonic_surrogate_model.pkl')
-    scaler = joblib.load('model/scaler.pkl')
-    return model, scaler
+def load_model():
+    try:
+        model = joblib.load("model/harmonic_surrogate_model.pkl")
+        scaler = joblib.load("model/scaler.pkl")
+        return model, scaler
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        return None, None
 
-model, scaler = load_model_and_scaler()
+model, scaler = load_model()
+
+if model is None:
+    st.stop()
 
 st.title("🔮 Predict Final Position of Damped Oscillator at t = 10s")
 
