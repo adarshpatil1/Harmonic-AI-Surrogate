@@ -1,77 +1,53 @@
 import streamlit as st
 import numpy as np
 import joblib
+import os
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
-# Set Streamlit page config
-st.set_page_config(page_title="Damped Oscillator Predictor", layout="centered")
+st.set_page_config(page_title="Damped Oscillator", layout="centered")
 
-# ---- Model Loading with Error Handling ----
-@st.cache_resource  # Cache the model for better performance
-def load_model():
-    try:
-        model_path = os.path.join('model', 'harmonic_surrogate_model.pkl')
-        scaler_path = os.path.join('model', 'scaler.pkl')
-        
-        # Check if files exist
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found at {model_path}")
-        if not os.path.exists(scaler_path):
-            raise FileNotFoundError(f"Scaler file not found at {scaler_path}")
-        
-        model = joblib.load(model_path)
-        scaler = joblib.load(scaler_path)
-        return model, scaler
-    except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
-        return None, None
+@st.cache_resource
+def load_model_and_scaler():
+    model = joblib.load('model/harmonic_surrogate_model.pkl')
+    scaler = joblib.load('model/scaler.pkl')
+    return model, scaler
 
-model, scaler = load_model()
+model, scaler = load_model_and_scaler()
 
-# Only proceed if model loaded successfully
-if model is None:
-    st.stop()  # Stop the app if model fails to load
-# App title
-st.title("🔮 Damped Harmonic Oscillator Final Position Predictor")
+st.title("🔮 Predict Final Position of Damped Oscillator at t = 10s")
 
-# Sidebar for input parameters
-st.sidebar.header("🛠 Input Parameters")
+# Input sliders
+x0 = st.sidebar.slider("Initial Position x₀", -10.0, 10.0, 0.0)
+v0 = st.sidebar.slider("Initial Velocity v₀", -5.0, 5.0, 0.0)
+m = st.sidebar.slider("Mass m", 0.5, 2.0, 1.0)
+c = st.sidebar.slider("Damping c", 0.1, 1.0, 0.5)
+k = st.sidebar.slider("Spring Constant k", 1.0, 5.0, 4.0)
 
-x0 = st.sidebar.slider("Initial Position (x₀)", -10.0, 10.0, 0.0)
-v0 = st.sidebar.slider("Initial Velocity (v₀)", -5.0, 5.0, 0.0)
-m = st.sidebar.slider("Mass (m)", 0.5, 2.0, 1.0)
-c = st.sidebar.slider("Damping Coefficient (c)", 0.1, 1.0, 0.5)
-k = st.sidebar.slider("Spring Constant (k)", 1.0, 5.0, 4.0)
+# Predict using model
+X = np.array([[x0, v0, m, c, k]])
+X_scaled = scaler.transform(X)
+pred = model.predict(X_scaled)[0]
 
-# Format input and make prediction
-input_features = np.array([[x0, v0, m, c, k]])
-input_scaled = scaler.transform(input_features)  # Only if scaler was used
+st.subheader(f"📈 Predicted Final Position: {pred:.4f}")
 
-prediction = model.predict(input_scaled)[0]
-
-# Show prediction
-st.subheader("📈 Predicted Final Position at t = 10s")
-st.success(f"Predicted x(10) = {prediction:.4f}")
-
-# Optional: Simulate true trajectory
-def simulate_oscillator(x0, v0, m, c, k, t_span=(0, 10), t_eval=None):
-    def oscillator(t, y):
+# Optional: plot true simulation
+def simulate(x0, v0, m, c, k):
+    def dydt(t, y):
         return [y[1], -(c/m)*y[1] - (k/m)*y[0]]
-    if t_eval is None:
-        t_eval = np.linspace(t_span[0], t_span[1], 200)
-    sol = solve_ivp(oscillator, t_span, [x0, v0], t_eval=t_eval)
+    t = np.linspace(0, 10, 200)
+    sol = solve_ivp(dydt, [0, 10], [x0, v0], t_eval=t)
     return sol.t, sol.y[0]
 
-# Checkbox for visualization
-if st.checkbox("🔍 Show Full Oscillation Plot"):
-    t, x = simulate_oscillator(x0, v0, m, c, k)
+if st.checkbox("🔍 Show True Oscillation Plot"):
+    t, x = simulate(x0, v0, m, c, k)
     fig, ax = plt.subplots()
-    ax.plot(t, x, label="True x(t)", color='blue')
-    ax.axhline(y=prediction, color='red', linestyle='--', label="Predicted x(10)")
+    ax.plot(t, x, label="True Position x(t)")
+    ax.axhline(pred, color='red', linestyle='--', label="Predicted x(10)")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Position")
-    ax.set_title("Oscillator Behavior Over Time")
-    ax.legend()
+    ax.set_title("Damped Oscillation")
     ax.grid(True)
+    ax.legend()
     st.pyplot(fig)
+
