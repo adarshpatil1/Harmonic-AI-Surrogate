@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import joblib
-import os
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
